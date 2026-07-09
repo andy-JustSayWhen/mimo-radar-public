@@ -49,7 +49,7 @@ Convert raw values before showing them:
 
 Combination format:
 
-`模型，推理-开/推理-关，Plan/按量，中国/国际`
+`模型名称［推理-开/推理-关，Plan/按量，中国/国际］`
 
 Do not show raw values such as `token_plan`, `payg`, `cn`, `intl`, `on`, or `off`.
 
@@ -76,21 +76,22 @@ Ranking groups:
 Each ranking item must use exactly two lines:
 
 ```text
-1. 模型，推理-开/推理-关，Plan/按量，中国/国际：整数智商
+1. 模型名称［推理-开/推理-关，Plan/按量，中国/国际］：整数智商
    智商 █████████░ · 成本 <成本值或成本暂无> · 耗时 <整数秒或耗时暂无>
 ```
 
 The second line must always include all three fields: IQ bar, cost, and latency.
 
-If cost is `null`, missing, or cannot be derived from public JSON, write `成本暂无`.
+Do not default to `成本暂无` if the public JSON already provides a numeric cost.
 
 If latency is `null`, missing, or cannot be derived from public JSON, write `耗时暂无`.
 
 Cost display:
 
+- Prefer the combo's latest numeric cost from `/current.json`.
 - If a CNY cost field exists, show `¥` with one decimal.
 - If only `costUsd` exists, convert with `1 USD = ¥7.2`, show `¥` with one decimal.
-- If no usable cost exists, show `成本暂无`.
+- Only if the public JSON truly has no usable cost, show `成本暂无`.
 
 Latency display:
 
@@ -103,36 +104,47 @@ Downgrade thresholds are global:
 - Drops by 1.0 to 2.9: `需观察`.
 - Drops below 1.0: no downgrade.
 
-Use this threshold inside the trend section only when comparable samples exist.
+Trend meaning is fixed:
+
+- `同比`: compare with yesterday's same test window.
+- `环比`: compare with the immediately previous public test.
+
+Trend sourcing is fixed:
+
+- First use `/current.json` combo field `trend.dayOverDay` and `trend.previousRun` if present.
+- If either dimension is missing, derive only that missing dimension from `/history.json` for the same combo.
+- Only write `无样本` for the dimension that truly has no comparable sample.
+
+Use the downgrade threshold inside both trend lines when comparable samples exist.
 
 ## Example
 
 ```text
 当前智商
-91，Best With：mimo-v2.5-pro，推理-关，Plan，中国。
+91，Best With：mimo-v2.5-pro［推理-关，Plan，中国］。
 
 智商趋势
-同比昨天同时段：暂无可比样本。
-环比今天上次测试：暂无可比样本。
+同比：稳定。
+环比：需观察。
 
 推荐使用
-保质量：mimo-v2.5-pro，推理-开，按量，中国。
-性价比：mimo-v2.5-pro，推理-关，Plan，中国。
+保质量：mimo-v2.5-pro［推理-开，按量，中国］。
+性价比：mimo-v2.5-pro［推理-关，Plan，中国］。
 
 智商榜单
 mimo-v2.5-pro
-1. mimo-v2.5-pro，推理-开，按量，中国：92
-   智商 █████████░ · 成本暂无 · 耗时 9 秒
-2. mimo-v2.5-pro，推理-关，Plan，中国：91
-   智商 █████████░ · 成本暂无 · 耗时 2 秒
-3. mimo-v2.5-pro，推理-关，按量，中国：90
-   智商 █████████░ · 成本暂无 · 耗时 2 秒
+1. mimo-v2.5-pro［推理-开，按量，中国］：92
+   智商 █████████░ · 成本 ¥1.3 · 耗时 9 秒
+2. mimo-v2.5-pro［推理-关，Plan，中国］：91
+   智商 █████████░ · 成本 ¥0.4 · 耗时 2 秒
+3. mimo-v2.5-pro［推理-关，按量，中国］：90
+   智商 █████████░ · 成本 ¥0.7 · 耗时 2 秒
 
 mimo-v2.5
-1. mimo-v2.5，推理-开，Plan，中国：90
-   智商 █████████░ · 成本暂无 · 耗时 7 秒
-2. mimo-v2.5，推理-开，按量，中国：89
-   智商 █████████░ · 成本暂无 · 耗时 6 秒
-3. mimo-v2.5，推理-关，Plan，中国：89
-   智商 █████████░ · 成本暂无 · 耗时 1 秒
+1. mimo-v2.5［推理-开，Plan，中国］：90
+   智商 █████████░ · 成本 ¥0.6 · 耗时 7 秒
+2. mimo-v2.5［推理-开，按量，中国］：89
+   智商 █████████░ · 成本 ¥0.5 · 耗时 6 秒
+3. mimo-v2.5［推理-关，Plan，中国］：89
+   智商 █████████░ · 成本 ¥0.2 · 耗时 1 秒
 ```
