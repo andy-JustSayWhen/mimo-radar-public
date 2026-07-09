@@ -1,0 +1,24 @@
+name: Feedback
+description: Submit public feedback for MiMO-Radar.
+title: "[Feedback] "
+labels:
+  - feedback
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: Tell us what you saw or what you want improved.
+      placeholder: Page, guide, or behavior...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: What should have happened instead?
+  - type: input
+    id: link
+    attributes:
+      label: Relevant link
+      placeholder: https://...
