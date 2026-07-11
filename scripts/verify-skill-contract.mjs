@@ -7,7 +7,8 @@ const requiredRules = [
   "`currentIq` must equal `bestWith.totalScore`",
   "It is independent from `qualityRecommendation` and `valueRecommendation`.",
   "Never calculate IQ from Heartbeat, Drift, or Confirm raw scores.",
-  "A confirmed downgrade triggers a new formal benchmark",
+  "Heartbeat is the only default downgrade decision input.",
+  "If baseline B is skipped, fails, or is incomplete, keep baseline A visible.",
   "Do not invent, merge, delete, or rescore points.",
 ];
 
@@ -18,4 +19,3 @@ if (missingRules.length > 0) {
 }
 
 console.log(`Skill contract verified: ${requiredRules.length} rules`);
-

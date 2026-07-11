@@ -42,7 +42,9 @@ If either URL fails or times out, say which URL failed. Do not wait, retry, or i
 - `currentIq` must equal `bestWith.totalScore`. If they differ, report a data inconsistency; do not choose or calculate a replacement.
 - `bestWith` is the highest-IQ combination in that report. It is independent from `qualityRecommendation` and `valueRecommendation`.
 - Combination totals and dimension scores come from the same latest formal benchmark. Never calculate IQ from Heartbeat, Drift, or Confirm raw scores.
-- Heartbeat, Drift, and Confirm update monitoring time and state only. A confirmed downgrade triggers a new formal benchmark; only that formal result may replace visible IQ scores.
+- Heartbeat is the only default downgrade decision input. If Heartbeat is normal, keep baseline A unchanged; if Heartbeat detects a downgrade, immediately run a complete formal benchmark as baseline B; only completed B may replace visible IQ scores.
+- Drift and Confirm are diagnostic-only worker levels. Their raw scores never replace baseline A and never enter visible IQ scores.
+- If baseline B is skipped, fails, or is incomplete, keep baseline A visible.
 - History points are report rows carrying formal benchmark scores. Do not invent, merge, delete, or rescore points.
 
 ## Labels
