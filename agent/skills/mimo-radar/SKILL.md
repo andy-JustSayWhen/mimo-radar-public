@@ -13,25 +13,27 @@ Manual trigger means one fetch only. Do not poll.
 
 Scheduled fetch times, Beijing time:
 
-- Formal benchmark result: 03:15.
-- Daily test result: 03:15, 08:15, 11:15, 13:15, 16:15.
+- Daily Heartbeat trigger: 03:05, 08:05, 11:05, 13:05, 16:05.
+- Weekly formal benchmark trigger: Sunday 03:00.
 
-If the public summary has not updated, wait for the next scheduled point or the next manual trigger.
+These are requested trigger times, not guaranteed completion times. The scheduler may start late. Use `generatedAt` as the actual public observation completion time and never rewrite it to a planned trigger time.
+
+If the public summary has not updated, report the currently published `generatedAt`. Do not claim that a delayed scheduled run completed on time, and do not poll unless the user explicitly asks to monitor it.
 
 ## Data Sources
 
 Read only:
 
-- `https://mimoradar.netlify.app/current.json`
-- `https://mimoradar.netlify.app/history.json`
+- `http://193.112.70.227/current.json`
+- `http://193.112.70.227/history.json`
 
 Prefer the agent's built-in HTTP or WebFetch capability.
 
 If WebFetch fails domain safety verification, use:
 
 ```bash
-curl -sSL --connect-timeout 10 --max-time 10 https://mimoradar.netlify.app/current.json
-curl -sSL --connect-timeout 10 --max-time 10 https://mimoradar.netlify.app/history.json
+curl -sSL --connect-timeout 10 --max-time 10 http://193.112.70.227/current.json
+curl -sSL --connect-timeout 10 --max-time 10 http://193.112.70.227/history.json
 ```
 
 If either URL fails or times out, say which URL failed. Do not wait, retry, or invent data.
@@ -46,6 +48,8 @@ If either URL fails or times out, say which URL failed. Do not wait, retry, or i
 - Drift and Confirm are diagnostic-only worker levels. Their raw scores never replace baseline A and never enter visible IQ scores.
 - If baseline B is skipped, fails, or is incomplete, keep baseline A visible.
 - History points are report rows carrying formal benchmark scores. Do not invent, merge, delete, or rescore points.
+- `generatedAt` is the latest public observation completion time. It may advance after a Heartbeat even when the visible formal scores remain unchanged.
+- Use `observation.triggerType`, `observation.testType`, `observation.scheduledDate`, `observation.scheduledSlot`, `observation.logicalObservationId`, and `observation.baselineReportId` when present. Never infer scheduled/manual identity or a planned slot from `generatedAt` alone.
 
 ## Labels
 
@@ -109,24 +113,25 @@ Latency display:
 - Convert `latencyMs` to seconds.
 - Round to integer seconds.
 
-Downgrade thresholds are global:
-
-- Same combination drops by 3.0 or more: `降智`.
-- Drops by 1.0 to 2.9: `需观察`.
-- Drops below 1.0: no downgrade.
-
 Trend meaning is fixed:
 
-- `同比`: compare with yesterday's same test window.
-- `环比`: compare with the immediately previous public test.
+- `同比`: compare the current combination's linked formal baseline score with yesterday's valid scheduled observation in the same `scheduledSlot`. Manual observations never become the day-over-day anchor.
+- `环比`: compare the current combination's linked formal baseline score with the immediately previous valid logical observation. Scheduled and manual observations both participate.
+- A manual latest observation does not replace the latest valid scheduled `同比`; keep the scheduled day-over-day result.
+- A retry in the same scheduled slot uses the last successful logical observation for that slot.
+- Legacy history without explicit observation identity may remain visible in history, but must not be guessed into an exact scheduled comparison.
 
 Trend sourcing is fixed:
 
-- First use `/current.json` combo field `trend.dayOverDay` and `trend.previousRun` if present.
-- If either dimension is missing, derive only that missing dimension from `/history.json` for the same combo.
-- Only write `无样本` for the dimension that truly has no comparable sample.
+- First use each `/current.json` `scoreSummaries` combo's `trend.dayOverDay` and `trend.previousRun` fields when present. These are the published conclusions from the latest code.
+- Use `/history.json` only when a published dimension is absent, and only with explicit observation identity plus the same combination's linked complete formal baseline scores.
+- Compare by relative change: `(current linked formal score - comparison linked formal score) / comparison linked formal score × 100%`. Do not compare rounded display integers.
+- Strictly greater than `10%`: `智商明显上涨`.
+- From `-10%` through `10%`, including both boundaries: `智商表现稳定`.
+- Strictly less than `-10%`: `智商疑似波动`.
+- If there is no legal comparison, a linked complete formal baseline is missing, the combination score is missing, or the comparison score is not positive: `数据缺失`.
 
-Use the downgrade threshold inside both trend lines when comparable samples exist.
+Do not output the retired trend labels `降智`, `需观察`, `稳定`, or `无样本` as conclusions.
 
 ## Example
 
@@ -135,8 +140,8 @@ Use the downgrade threshold inside both trend lines when comparable samples exis
 91，Best With：mimo-v2.5-pro［推理-关，Plan，中国］。
 
 智商趋势
-同比：稳定。
-环比：需观察。
+同比：智商表现稳定。
+环比：智商表现稳定。
 
 推荐使用
 保质量：mimo-v2.5-pro［推理-开，按量，中国］。
